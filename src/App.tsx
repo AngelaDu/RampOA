@@ -14,6 +14,7 @@ export function App() {
   const { data: transactionsByEmployee, ...transactionsByEmployeeUtils } = useTransactionsByEmployee()
   const [isLoading, setIsLoading] = useState(false)
 
+  // bug 4, we establish that the issue occurs due to pagination
   const transactions = useMemo(
     () => paginatedTransactions?.data ?? transactionsByEmployee ?? null,
     [paginatedTransactions, transactionsByEmployee]
@@ -65,7 +66,7 @@ export function App() {
               return
             }
             // Bug 3: EMPTY_EMPLOYEE is not considered, add an if check
-            if (newValue.id) await loadTransactionsByEmployee(newValue.id)  
+            if (newValue.id) await loadTransactionsByEmployee(newValue.id)
             else await loadAllTransactions()
           }}
         />
@@ -78,12 +79,13 @@ export function App() {
           {transactions !== null && (
             <button
               className="RampButton"
-              disabled={paginatedTransactionsUtils.loading}
+              disabled={
+                paginatedTransactionsUtils.loading ||
+                !paginatedTransactions ||
+                paginatedTransactions.nextPage === null // add a check here to prevent out of range
+              }
               onClick={async () => {
-                // console.log("transactions", transactions)
-                // console.log('pageinated', paginatedTransactions)
-                // console.log('byemployee', transactionsByEmployee)
-                // // await loadAllTransactions()
+                await loadAllTransactions()
               }}
             >
               View More
