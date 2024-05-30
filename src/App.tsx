@@ -84,15 +84,11 @@ export function App() {
         <div className="RampGrid">
           <Transactions transactions={transactions} />
 
-          {transactions !== null && (
+          {/* bug 6: add limiters for paginations */}
+          {transactions !== null && paginatedTransactions && paginatedTransactions.nextPage !== null && (
             <button
               className="RampButton"
-              disabled={
-                isLoading ||
-                paginatedTransactionsUtils.loading ||
-                !paginatedTransactions ||
-                paginatedTransactions.nextPage === null // add a check here to prevent out of range
-              }
+              disabled={isLoading || paginatedTransactionsUtils.loading}
               onClick={async () => {
                 await loadAllTransactions()
               }}
