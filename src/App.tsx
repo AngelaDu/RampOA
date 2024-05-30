@@ -13,6 +13,7 @@ export function App() {
   const { data: paginatedTransactions, ...paginatedTransactionsUtils } = usePaginatedTransactions()
   const { data: transactionsByEmployee, ...transactionsByEmployeeUtils } = useTransactionsByEmployee()
   const [isLoading, setIsLoading] = useState(false)
+  const [isLoadingEmployees, setIsLoadingEmployees] = useState(true)
 
   // bug 4, we establish that the issue occurs due to pagination
   const transactions = useMemo(
@@ -22,13 +23,9 @@ export function App() {
 
   const loadAllTransactions = useCallback(async () => {
     setIsLoading(true)
-    transactionsByEmployeeUtils.invalidateData()
-
-    await employeeUtils.fetchAll()
     await paginatedTransactionsUtils.fetchAll()
-
     setIsLoading(false)
-  }, [employeeUtils, paginatedTransactionsUtils, transactionsByEmployeeUtils])
+  }, [paginatedTransactionsUtils])
 
   const loadTransactionsByEmployee = useCallback(
     async (employeeId: string) => {
@@ -38,11 +35,22 @@ export function App() {
     [paginatedTransactionsUtils, transactionsByEmployeeUtils]
   )
 
+  // move this callback out of loadAllTransactions since we do
+  //  not need to call it each time
+  const loadEmployees = useCallback(async () => {
+    // bug 5: we add an isLoading for employees separate from the pagination
+    setIsLoadingEmployees(true)
+    transactionsByEmployeeUtils.invalidateData()
+    await employeeUtils.fetchAll()
+    setIsLoadingEmployees(false)
+  }, [transactionsByEmployeeUtils, employeeUtils])
+
   useEffect(() => {
     if (employees === null && !employeeUtils.loading) {
+      loadEmployees()
       loadAllTransactions()
     }
-  }, [employeeUtils.loading, employees, loadAllTransactions])
+  }, [employeeUtils.loading, employees, loadAllTransactions, loadEmployees])
 
   return (
     <Fragment>
@@ -52,7 +60,7 @@ export function App() {
         <hr className="RampBreak--l" />
 
         <InputSelect<Employee>
-          isLoading={isLoading}
+          isLoading={isLoadingEmployees}
           defaultValue={EMPTY_EMPLOYEE}
           items={employees === null ? [] : [EMPTY_EMPLOYEE, ...employees]}
           label="Filter by employee"
@@ -80,6 +88,7 @@ export function App() {
             <button
               className="RampButton"
               disabled={
+                isLoading ||
                 paginatedTransactionsUtils.loading ||
                 !paginatedTransactions ||
                 paginatedTransactions.nextPage === null // add a check here to prevent out of range
